@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.JsonReader;
 import android.util.Log;
+import android.widget.AdapterView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -19,6 +20,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.content.Intent;
+import android.net.Uri;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,9 +42,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        //setContentView(R.layout.activity_main);
 
         setContentView(R.layout.activity_main);
+        //setContentView(R.layout.activity_maps);
 
         listaFallas = new ArrayList<>();
         lv = (ListView) findViewById(R.id.list);
@@ -76,10 +85,12 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject falla = fallas.getJSONObject(i);
                         // Phone node is JSON Object
                         JSONObject datos = falla.getJSONObject("properties");
+                        JSONObject geometria = falla.getJSONObject("geometry");
                         String id = datos.getString("id");
                         String nombre = datos.getString("nombre");
                         String fallera = datos.getString("fallera");
                         String seccion = datos.getString("seccion");
+                        String coordenadas = geometria.getString("coordinates");
 
                         // tmp hash map for single contact
                         HashMap<String, String> fallaMap = new HashMap<>();
@@ -89,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
                         fallaMap.put("nombre", nombre);
                         fallaMap.put("fallera", fallera);
                         fallaMap.put("seccion", seccion);
+                        fallaMap.put("coordenadas", coordenadas);
 
                         // adding contact to contact list
                         listaFallas.add(fallaMap);
@@ -125,11 +137,34 @@ public class MainActivity extends AppCompatActivity {
             ListAdapter adapter = new SimpleAdapter(
                     MainActivity.this, listaFallas,
                     R.layout.list_item, new String[]{"nombre", "fallera",
-                    "seccion"}, new int[]{R.id.nombre,
+                    "seccion", "coordenadas"}, new int[]{R.id.nombre,
                     R.id.fallera, R.id.seccion});
 
             lv.setAdapter(adapter);
-        }
 
+            lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+                    //Obtener elemento
+                    Object item = lv.getItemAtPosition(position);
+
+                    //Tratamiento para arreglar las coordenadas
+                    String posicion = item.toString();
+                    posicion = posicion.substring(posicion.indexOf("[")+1, posicion.indexOf("]"));
+                    double pX = Double.parseDouble(posicion.substring(0,posicion.indexOf(",")));
+                    double pY = Double.parseDouble(posicion.substring(posicion.indexOf(",")+1, posicion.length()));
+
+                    //Inventar algo para que cuadre
+
+                    //Instrucciones para abrir google maps
+                    Uri gmmIntentUri = Uri.parse("geo:"+pX+","+pY);
+                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                    mapIntent.setPackage("com.google.android.apps.maps");
+                    startActivity(mapIntent);
+                }
+            });
+
+
+        }
     }
 }
